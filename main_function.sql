@@ -1,4 +1,4 @@
-create function qr_factorisation(current_table character varying) returns void
+create or replace function qr_factorisation(current_table character varying) returns void
     language plpgsql
 as
 $$
@@ -95,3 +95,4 @@ $$;
 
 alter function qr_factorisation(varchar) owner to postgres;
 
+select * from qr_factorisation('table');
