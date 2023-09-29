@@ -1,0 +1,4 @@
+-- auto-generated definition
+create operator && (procedure = qr_factorisation, leftarg = integer, rightarg = varchar);
+
+alter operator &&(varchar, varchar) owner to postgres;
