@@ -1,0 +1,58 @@
+create or replace function qr_optimized(current_table varchar) returns void
+    language plpgsql
+as
+$$
+declare
+    required_columns   varchar[] ;
+    column_            varchar;
+    normalised_columns varchar[];
+    column_names       varchar[];
+    j                  integer := 1;
+    i                  integer := 1;
+    query              varchar; input_string text;
+
+begin
+    drop table if exists q_table;
+    drop table if exists r_table;
+    execute 'create  table q_table (like ' || current_table || ')';
+    input_string :=
+            'rid,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16,c17,c18,c19,c20,c21,c22,c23,c24,c25,c26,c27,c28,c29,c30,c31';
+
+    column_names := string_to_array(input_string, ',');
+    for i in 1..array_length(column_names, 1) - 1
+        loop
+            if (i = 1) then
+                query := 'with te1(norm) as (select sqrt(sum(' || quote_ident(column_names[i + 1]) || '*' ||
+                         quote_ident(column_names[i + 1]) || ')) from ' || current_table ||
+                         ' ) insert into q_table(rid,c1) (select rid,' || quote_ident(column_names[i + 1]) ||
+                         '/te1.norm from ' ||
+                         current_table || ',te1)';
+                raise notice '%',query;
+                normalised_columns[i] := 'c1';
+                execute query;
+            else
+                query := 'with te(rid,u2) as (select t1.rid,t1.' || quote_ident(column_names[i + 1]);
+                for j in 1..i
+                    loop
+                        query := concat(query, ' -(t1.' || quote_ident(column_names[i + 1]) || '*t2.' ||
+                                               quote_ident(normalised_columns[j]) ||
+                                               ') * t2.' || quote_ident(normalised_columns[j]));
+                    end loop;
+                query := concat(query, ' from (select rid,' || quote_ident(column_names[i + 1]) ||
+                                       ' from ' || current_table || ') as t1 join (select rid');
+                for j in 1..i
+                    loop
+                        query := concat(query, ',' || quote_ident(normalised_columns[j]));
+                    end loop;
+                normalised_columns[i] := column_names[i + 1];
+                query := concat(query,
+                                ' from q_table) as t2 on t1.rid = t2.rid),te1(norm) as (select sqrt(sum(u2 * u2)) from te) update q_table set ' ||
+                                quote_ident(normalised_columns[array_length(normalised_columns, 1)]) ||
+                                ' = te.u2/te1.norm from te,te1 where q_table.rid = te.rid');
+                raise notice '%',query;
+                execute query;
+            end if;
+
+        end loop;
+end;
+$$;
