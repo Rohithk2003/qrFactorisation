@@ -1,0 +1,36 @@
+
+\begin{algorithm}
+    \caption{QR Factorization with Gram-Schmidt Column Pivoting}
+        \State \textbf{Input:} data set: the input dataset
+        \State dataset \leftarrow SELECT * FROM dataset;
+        \State column\_names \leftarrow get\_column\_names(dataset);
+        \State data \leftarrow get\_data(dataset);
+        \State df \leftarrow create\_dataframe(data, column\_names);
+        \State df \leftarrow convert\_to\_numeric(df);
+        \State df \leftarrow drop\_na(df);
+        \State input\_matrix \leftarrow convert\_to\_numpy(df);
+        
+        \Function{\small qr\_factorization\_gram\_schmidt\_pivoting}{A}
+            \State m, n \leftarrow shape(A);
+            \State Q \leftarrow zeros(m, n);
+            \State R \leftarrow zeros(n, n);
+            \State P \leftarrow identity\_matrix(n);
+            
+            \For{k = 0 \textbf{to} n-1}
+                \State max\_col\_index \leftarrow` argmax(norm(A[:, k:]), axis=0);
+                \State max\_col\_index \leftarrow max\_col\_index + k;
+                \State swap\_columns(A, k, max\_col\_index);
+                \State swap\_columns(P, k, max\_col\_index);
+                
+                \State v \leftarrow A[:, k];
+                \For{j = 0 \textbf{to} k-1}
+                    \State R[j, k] \leftarrow dot\_product(Q[:, j], A[:, k]);
+                    \State v \leftarrow v - (R[j, k] * Q[:, j]);
+                \EndFor
+                \State R[k, k] \leftarrow norm(v);
+                \State Q[:, k] \leftarrow v / R[k, k];
+            \EndFor
+            \State \textbf{return} R;
+        \EndFunction
+\end{algorithm}
+
